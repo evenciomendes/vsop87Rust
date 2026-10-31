@@ -81,7 +81,7 @@ const server = http.createServer((req, res) => {
 });
 
 if (require.main === module) {
-  server.listen(PORT, () => {
+  server.listen(PORT, '0.0.0.0', () => {
     const rustBin = getRustBinaryPath();
     console.log('==============================================================');
     console.log(' Servidor Web Astrologia (Node.js + Motor Rust VSOP87) no ar!');

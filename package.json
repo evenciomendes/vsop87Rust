@@ -1,0 +1,13 @@
+{
+  "name": "vsop87-rust-astro-web",
+  "version": "1.0.0",
+  "description": "Motor Astronomico e Astrologico VSOP87 (Rust + Node.js)",
+  "main": "novo-app-astro-rust/node-web-app/server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node novo-app-astro-rust/node-web-app/server.js"
+  }
+}
+
