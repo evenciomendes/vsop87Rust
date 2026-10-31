@@ -1,0 +1,8 @@
+[package]
+name = "rust-astro-engine"
+version = "1.0.0"
+edition = "2021"
+description = "Motor de Calculo Astronomico e Astrologico de Alta Precisao (VSOP87 / ELP2000 / Jean Meeus) portado de AA.js para Rust"
+
+[dependencies]
+# Zero dependencias externas! 100% Rust std puro para compilacao instantanea e maxima performance.

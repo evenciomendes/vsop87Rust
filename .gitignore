@@ -1,0 +1,9 @@
+# Ignora a pasta de arquivos legados/antigos e zips
+_legado_para_remover/
+*.zip
+
+# Ignora artefatos de compilação do Rust e Node.js
+**/target/
+**/node_modules/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,9 @@
+{
+  "name": "astro-node-web-app",
+  "version": "1.0.0",
+  "description": "Aplicacao Web Node.js + HTML alimentada pelo motor astronomico/astrologico em Rust",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

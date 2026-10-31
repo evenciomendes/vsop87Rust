@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Motor Astronômico & Astrológico — Rust (VSOP87) + Node.js</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card: #111827;
+      --card-border: #1f2937;
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --accent: #f59e0b;
+      --accent-blue: #3b82f6;
+      --rx: #ef4444;
+      --direct: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at top, #172036 0%, var(--bg) 70%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 1380px; margin: 0 auto; }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 24px;
+      background: rgba(17, 24, 39, 0.85);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      margin-bottom: 20px;
+      backdrop-filter: blur(8px);
+    }
+    .title-group h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .badge-rust {
+      background: linear-gradient(135deg, #ea580c, #d97706);
+      color: #fff;
+      font-size: 0.75rem;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+    .title-group p { color: var(--muted); font-size: 0.88rem; margin-top: 4px; }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+    .controls label { font-size: 0.8rem; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
+    input, select, button {
+      background: #1f2937;
+      border: 1px solid #374151;
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+    button {
+      cursor: pointer;
+      background: var(--accent-blue);
+      border-color: #2563eb;
+      font-weight: 600;
+      transition: filter 0.15s;
+    }
+    button:hover { filter: brightness(1.12); }
+    button.secondary { background: #374151; border-color: #4b5563; }
+
+    .metrics-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .metric-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px 16px;
+    }
+    .metric-card .label { font-size: 0.76rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .metric-card .value { font-size: 1.15rem; font-weight: 700; margin-top: 4px; color: #fbbf24; font-family: Consolas, monospace; }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 1024px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 18px;
+    }
+    .panel h2 {
+      font-size: 1.02rem;
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .wheel-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    svg#zodiacWheel {
+      width: 100%;
+      max-width: 420px;
+      height: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    th, td {
+      padding: 9px 10px;
+      text-align: left;
+      border-bottom: 1px solid #1f2937;
+    }
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.76rem;
+      text-transform: uppercase;
+    }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .mono { font-family: Consolas, 'Courier New', monospace; }
+    .symbol-cell { font-size: 1.15rem; margin-right: 6px; }
+    .badge-rx {
+      background: rgba(239, 68, 68, 0.18);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      font-weight: 700;
+    }
+    .badge-dir {
+      background: rgba(16, 185, 129, 0.14);
+      color: #34d399;
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+    }
+    .elem-Fogo { color: #f87171; }
+    .elem-Terra { color: #34d399; }
+    .elem-Ar { color: #60a5fa; }
+    .elem-Água { color: #c084fc; }
+
+    .aspects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .aspect-pill {
+      background: #1a2234;
+      border: 1px solid #293548;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 0.83rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    pre#mongoJson {
+      background: #090d16;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 0.78rem;
+      color: #a7f3d0;
+      max-height: 220px;
+      overflow: auto;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="title-group">
+        <h1>
+          <span>🌌 Motor Astronômico & Astrológico</span>
+          <span class="badge-rust">Rust VSOP87 + Node.js</span>
+        </h1>
+        <p>Cálculos geocêntricos aparentes (VSOP87, ELP2000, FK5, Aberração e Nutação) processados em Rust e servidos via Node.js</p>
+      </div>
+      <div class="controls">
+        <label>
+          Data e Hora (UTC)
+          <input type="datetime-local" id="dtInput" step="1" />
+        </label>
+        <label>
+          Longitude Obs. (°)
+          <input type="number" id="lngInput" value="-46.6333" step="0.01" style="width:110px" />
+        </label>
+        <label>
+          Nodo Lunar (Tabela e Roda)
+          <select id="nodeModeSelect">
+            <option value="mean" selected>Nodo Médio (Padrão)</option>
+            <option value="true">Nodo Verdadeiro</option>
+            <option value="both">Ambos (Médio + Verdadeiro)</option>
+          </select>
+        </label>
+        <button id="btnCalc">Calcular no Rust</button>
+        <button id="btnNow" class="secondary">Agora (UTC)</button>
+      </div>
+    </header>
+
+    <div class="metrics-bar">
+      <div class="metric-card">
+        <div class="label">Tempo do Motor Rust</div>
+        <div class="value" id="mRustTime">-- µs</div>
+      </div>
+      <div class="metric-card">
+        <div class="label">Dia Juliano (JD)</div>
+        <div class="value" id="mJd">--</div>
+      </div>
+      <div class="metric-card">
+        <div class="label">Obliquidade da Eclíptica (ε)</div>
+        <div class="value" id="mObliq">--</div>
+      </div>
+      <div class="metric-card">
+        <div class="label">Nutação (Δψ / Δε)</div>
+        <div class="value" id="mNut">--</div>
+      </div>
+      <div class="metric-card">
+        <div class="label">Tempo Sideral Local</div>
+        <div class="value" id="mLst">--</div>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <div class="panel wheel-wrapper">
+        <h2 style="width:100%">
+          <span>Roda Eclíptica Tropical (0°–360°)</span>
+          <span style="font-size:0.76rem;color:var(--muted)">Aspectos Exatos</span>
+        </h2>
+        <svg id="zodiacWheel" viewBox="0 0 420 420"></svg>
+      </div>
+
+      <div class="panel">
+        <h2>
+          <span>Posições Planetárias Geocêntricas Aparentes</span>
+          <span id="isoLabel" class="mono" style="font-size:0.8rem;color:var(--muted)"></span>
+        </h2>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Astro</th>
+                <th>Signo</th>
+                <th>Posição Zodiacal</th>
+                <th>Long. Eclíptica</th>
+                <th>Lat. Eclíptica</th>
+                <th>AR (h) / Dec (°)</th>
+                <th>Distância</th>
+                <th>Veloc. (°/dia)</th>
+                <th>Movimento</th>
+              </tr>
+            </thead>
+            <tbody id="planetsBody"></tbody>
+          </table>
+        </div>
+
+        <h2 style="margin-top:22px">
+          <span>Aspectos Planetários Principais</span>
+          <span id="aspectCount" style="font-size:0.78rem;color:var(--muted)"></span>
+        </h2>
+        <div id="aspectsContainer" class="aspects-grid"></div>
+
+        <h2 style="margin-top:22px">
+          <span>JSON Pronto para Persistência no MongoDB</span>
+          <span style="font-size:0.75rem;color:var(--muted)">Retorno direto do binário Rust</span>
+        </h2>
+        <pre id="mongoJson"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SIGN_SYMBOLS = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
+    const SIGN_COLORS  = ['#f87171','#34d399','#60a5fa','#c084fc','#f87171','#34d399','#60a5fa','#c084fc','#f87171','#34d399','#60a5fa','#c084fc'];
+
+    function setInputToNowUTC() {
+      const now = new Date();
+      const iso = now.toISOString().slice(0, 19);
+      document.getElementById('dtInput').value = iso;
+    }
+
+    function drawZodiacWheel(bodies, aspects) {
+      const svg = document.getElementById('zodiacWheel');
+      const cx = 210, cy = 210, rOuter = 195, rSignInner = 160, rPlanet = 132, rAspect = 105;
+      let html = '';
+
+      // Círculos de fundo
+      html += `<circle cx="${cx}" cy="${cy}" r="${rOuter}" fill="#090d16" stroke="#374151" stroke-width="2"/>`;
+      html += `<circle cx="${cx}" cy="${cy}" r="${rSignInner}" fill="#0f172a" stroke="#374151" stroke-width="1.5"/>`;
+      html += `<circle cx="${cx}" cy="${cy}" r="${rAspect}" fill="#090d16" stroke="#1e293b" stroke-width="1"/>`;
+
+      // 12 setores de signos (0° Áries na esquerda = 180° SVG, sentido anti-horário)
+      const degToRad = (lon) => ((180 - lon) * Math.PI) / 180;
+
+      for (let i = 0; i < 12; i++) {
+        const startLon = i * 30;
+        const midLon = startLon + 15;
+        const a1 = degToRad(startLon);
+        const x1 = cx + rSignInner * Math.cos(a1);
+        const y1 = cy + rSignInner * Math.sin(a1);
+        const x2 = cx + rOuter * Math.cos(a1);
+        const y2 = cy + rOuter * Math.sin(a1);
+        html += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#374151" stroke-width="1"/>`;
+
+        const aMid = degToRad(midLon);
+        const rSym = (rOuter + rSignInner) / 2;
+        const sx = cx + rSym * Math.cos(aMid);
+        const sy = cy + rSym * Math.sin(aMid);
+        html += `<text x="${sx}" y="${sy}" fill="${SIGN_COLORS[i]}" font-size="16" text-anchor="middle" dominant-baseline="central">${SIGN_SYMBOLS[i]}</text>`;
+      }
+
+      // Filtra quais nodos exibir na roda conforme seleção (a tabela e o JSON exibem todos)
+      const nodeMode = document.getElementById('nodeModeSelect')?.value || 'mean';
+      const wheelBodies = bodies.filter((b) => {
+        if (nodeMode === 'mean' && (b.id === 'true_north_node' || b.id === 'true_south_node')) return false;
+        if (nodeMode === 'true' && (b.id === 'mean_north_node' || b.id === 'mean_south_node')) return false;
+        return true;
+      });
+
+      // Mapa de coordenadas dos planetas para desenhar aspectos e pontos na roda
+      const coordsBySymbol = {};
+      const coordsById = {};
+      bodies.forEach((b) => {
+        const a = degToRad(b.longitude);
+        const pt = {
+          ax: cx + rAspect * Math.cos(a),
+          ay: cy + rAspect * Math.sin(a),
+          px: cx + rPlanet * Math.cos(a),
+          py: cy + rPlanet * Math.sin(a),
+          tx: cx + rSignInner * Math.cos(a),
+          ty: cy + rSignInner * Math.sin(a)
+        };
+        coordsById[b.id] = pt;
+        if (!coordsBySymbol[b.symbol]) {
+          coordsBySymbol[b.symbol] = pt;
+        }
+      });
+
+      // Linhas de aspectos
+      aspects.forEach((asp) => {
+        const p1 = coordsBySymbol[asp.symbol1];
+        const p2 = coordsBySymbol[asp.symbol2];
+        if (p1 && p2) {
+          html += `<line x1="${p1.ax}" y1="${p1.ay}" x2="${p2.ax}" y2="${p2.ay}" stroke="${asp.color}" stroke-width="1.3" stroke-opacity="0.65"/>`;
+        }
+      });
+
+      // Pontos e símbolos dos astros
+      wheelBodies.forEach((b) => {
+        const c = coordsById[b.id];
+        const isTrueNode = b.id === 'true_north_node' || b.id === 'true_south_node';
+        const color = b.isRetrograde ? '#f87171' : '#fbbf24';
+        const badgeLabel = (nodeMode === 'both' && isTrueNode) ? `${b.symbol}ᵀ` : b.symbol;
+        html += `<line x1="${c.tx}" y1="${c.ty}" x2="${c.px}" y2="${c.py}" stroke="#475569" stroke-width="1" stroke-dasharray="2,2"/>`;
+        html += `<circle cx="${c.ax}" cy="${c.ay}" r="3" fill="${color}"/>`;
+        html += `<circle cx="${c.px}" cy="${c.py}" r="12" fill="#1e293b" stroke="${color}" stroke-width="1.2"/>`;
+        html += `<text x="${c.px}" y="${c.py}" fill="#ffffff" font-size="13" text-anchor="middle" dominant-baseline="central"><title>${b.name}: ${b.formattedPosition}</title>${badgeLabel}</text>`;
+      });
+
+      svg.innerHTML = html;
+    }
+
+    // Garante que Quíron e o Nodo Médio existam mesmo se o processo node server.js antigo não tiver sido reiniciado ainda
+    function ensureMeanNodesInData(data) {
+      if (!data || !Array.isArray(data.bodies)) return;
+
+      const ZODIAC = [
+        ['Áries','♈','Fogo'],['Touro','♉','Terra'],['Gêmeos','♊','Ar'],['Câncer','♋','Água'],
+        ['Leão','♌','Fogo'],['Virgem','♍','Terra'],['Libra','♎','Ar'],['Escorpião','♏','Água'],
+        ['Sagitário','♐','Fogo'],['Capricórnio','♑','Terra'],['Aquário','♒','Ar'],['Peixes','♓','Água']
+      ];
+      const DEG2RAD = Math.PI / 180;
+      const RAD2DEG = 180 / Math.PI;
+      const map360 = (d) => ((d % 360) + 360) % 360;
+
+      const eclToEqu = (l, b, eps) => {
+        const dec = Math.asin(Math.sin(b * DEG2RAD) * Math.cos(eps * DEG2RAD) + Math.cos(b * DEG2RAD) * Math.sin(eps * DEG2RAD) * Math.sin(l * DEG2RAD)) * RAD2DEG;
+        const y = Math.sin(l * DEG2RAD) * Math.cos(eps * DEG2RAD) - Math.tan(b * DEG2RAD) * Math.sin(eps * DEG2RAD);
+        const x = Math.cos(l * DEG2RAD);
+        const ra = (((Math.atan2(y, x) * RAD2DEG / 15) % 24) + 24) % 24;
+        return { rightAscension: ra, declination: dec };
+      };
+
+      const makeBody = (id, name, symbol, category, lon, lat, dist, distUnit, eps, dailySpeed) => {
+        const signIndex = Math.min(11, Math.floor(lon / 30));
+        const [signName, signSymbol, element] = ZODIAC[signIndex];
+        const absVal = Math.abs(lon - signIndex * 30);
+        const radix = Math.floor(absVal);
+        const fracMin = (absVal - radix) * 60;
+        const minutes = Math.floor(fracMin);
+        const seconds = (fracMin - minutes) * 60;
+        const isRetrograde = dailySpeed < 0;
+        const formattedPosition = `${String(radix).padStart(2, '0')}° ${signSymbol} ${String(minutes).padStart(2, '0')}' ${seconds.toFixed(1).padStart(4, '0')}"${isRetrograde ? ' Rx' : ''}`;
+        const equ = eclToEqu(lon, lat, eps);
+        return {
+          id, name, symbol, category,
+          longitude: lon, latitude: lat,
+          rightAscension: equ.rightAscension, declination: equ.declination,
+          distance: dist, distanceUnit: distUnit,
+          dailySpeed, isRetrograde,
+          signIndex, signName, signSymbol, element,
+          degreeInSign: radix, minutes, seconds: Number(seconds.toFixed(2)),
+          formattedPosition
+        };
+      };
+
+      const jd = data.julianDay;
+      const dt = 0.005;
+      const eps = data.astronomy?.trueObliquity || 23.43929;
+
+      // 1. Garante Quíron (2060 Chiron) se não veio do backend em memória
+      if (!data.bodies.some((b) => b.id === 'chiron')) {
+        const CHIRON_EPOCHS = [
+          [2415020.5, 13.68200, 0.38050, 6.9240, 209.6800, 339.1200, 319.8500],
+          [2433282.5, 13.64500, 0.37860, 6.9220, 209.6150, 339.4200,  33.1800],
+          [2443448.5, 13.69480, 0.37860, 6.9230, 209.5910, 339.5050, 230.1250],
+          [2450127.5, 13.69540, 0.38200, 6.9310, 209.3920, 339.5600,   0.0000],
+          [2451545.0, 13.69619, 0.38209, 6.9310, 209.3906, 339.5613,  27.5620],
+          [2459000.5, 13.70250, 0.37925, 6.9295, 209.3580, 339.9400, 172.3400],
+          [2460800.5, 13.70420, 0.37911, 6.9292, 209.3550, 339.9620, 207.3300],
+          [2469807.5, 13.69800, 0.38120, 6.9300, 209.3400, 339.8800,  22.3900]
+        ];
+        const chironHelio = (j) => {
+          let best = CHIRON_EPOCHS[0], minDist = Math.abs(j - best[0]);
+          for (let i = 1; i < CHIRON_EPOCHS.length; i++) {
+            const d = Math.abs(j - CHIRON_EPOCHS[i][0]);
+            if (d < minDist) { minDist = d; best = CHIRON_EPOCHS[i]; }
+          }
+          const [jd0, a, e, iDeg, nodeDeg, argpDeg, m0Deg] = best;
+          const nDeg = 0.9856076686 / (a * Math.sqrt(a));
+          const mRad = map360(m0Deg + nDeg * (j - jd0)) * DEG2RAD;
+          let E = mRad + e * Math.sin(mRad) * (1 + e * Math.cos(mRad));
+          for (let k = 0; k < 8; k++) {
+            const dE = (E - e * Math.sin(E) - mRad) / (1 - e * Math.cos(E));
+            E -= dE;
+            if (Math.abs(dE) < 1e-12) break;
+          }
+          const xv = a * (Math.cos(E) - e);
+          const yv = a * Math.sqrt(1 - e * e) * Math.sin(E);
+          const vRad = Math.atan2(yv, xv);
+          const rAu = Math.sqrt(xv * xv + yv * yv);
+          const uRad = argpDeg * DEG2RAD + vRad;
+          const iRad = iDeg * DEG2RAD, nodeRad = nodeDeg * DEG2RAD;
+          const lonJ2000 = nodeRad + Math.atan2(Math.sin(uRad) * Math.cos(iRad), Math.cos(uRad));
+          const latJ2000 = Math.asin(Math.sin(uRad) * Math.sin(iRad));
+          const tCent = (j - 2451545.0) / 36525.0;
+          const precessDeg = 1.396971 * tCent + 0.0003086 * tCent * tCent;
+          return { lon: map360(lonJ2000 * RAD2DEG + precessDeg), lat: latJ2000 * RAD2DEG, rad: rAu };
+        };
+
+        const sunBody = data.bodies.find((b) => b.id === 'sun');
+        const sunLon0 = sunBody ? sunBody.longitude : 217.285;
+        const sunSpeed = sunBody ? sunBody.dailySpeed : 0.998;
+        const r0 = sunBody ? sunBody.distance : 0.993;
+
+        const chironGeo = (j) => {
+          const dtJ = j - jd;
+          const l0 = map360(sunLon0 + sunSpeed * dtJ + 180.0) * DEG2RAD;
+          let h = chironHelio(j);
+          // Correção de tempo de luz (1 iteração já atinge < 0.01")
+          for (let it = 0; it < 2; it++) {
+            const lr = h.lon * DEG2RAD, br = h.lat * DEG2RAD;
+            const x = h.rad * Math.cos(br) * Math.cos(lr) - r0 * Math.cos(l0);
+            const y = h.rad * Math.cos(br) * Math.sin(lr) - r0 * Math.sin(l0);
+            const z = h.rad * Math.sin(br);
+            const dist = Math.sqrt(x * x + y * y + z * z);
+            h = chironHelio(j - dist * 0.0057755183);
+          }
+          const lr = h.lon * DEG2RAD, br = h.lat * DEG2RAD;
+          const x = h.rad * Math.cos(br) * Math.cos(lr) - r0 * Math.cos(l0);
+          const y = h.rad * Math.cos(br) * Math.sin(lr) - r0 * Math.sin(l0);
+          const z = h.rad * Math.sin(br);
+          const dist = Math.sqrt(x * x + y * y + z * z);
+          const nutDeg = (data.astronomy?.nutationLongitudeArcsec || 0) / 3600.0;
+          const lon = map360(RAD2DEG * Math.atan2(y, x) + nutDeg);
+          const lat = RAD2DEG * Math.atan2(z, Math.sqrt(x * x + y * y));
+          return { lon, lat, dist };
+        };
+
+        const cCur = chironGeo(jd), cPrev = chironGeo(jd - dt), cNext = chironGeo(jd + dt);
+        let dC = cNext.lon - cPrev.lon;
+        if (dC > 180) dC -= 360;
+        if (dC < -180) dC += 360;
+        const cSpeed = dC / (2 * dt);
+        const chironBody = makeBody('chiron', 'Quíron', '⚷', 'Centauro', cCur.lon, cCur.lat, cCur.dist, 'UA', eps, cSpeed);
+
+        const satIdx = data.bodies.findIndex((b) => b.id === 'saturn');
+        if (satIdx >= 0) {
+          data.bodies.splice(satIdx + 1, 0, chironBody);
+        } else {
+          data.bodies.push(chironBody);
+        }
+
+        // Adiciona aspectos de Quíron com os demais astros principais
+        const aspectDefs = [
+          ['Conjunção', '☌', 0, 8, '#f59e0b'],
+          ['Sextil', '⚹', 60, 5, '#10b981'],
+          ['Quadratura', '□', 90, 7, '#ef4444'],
+          ['Trígono', '△', 120, 7, '#3b82f6'],
+          ['Oposição', '☍', 180, 8, '#ec4499']
+        ];
+        if (Array.isArray(data.aspects)) {
+          data.bodies.slice(0, 11).forEach((other) => {
+            if (other.id === 'chiron') return;
+            let diff = Math.abs(chironBody.longitude - other.longitude);
+            if (diff > 180) diff = 360 - diff;
+            for (const [aname, asym, exact, maxOrb, color] of aspectDefs) {
+              const orb = Math.abs(diff - exact);
+              if (orb <= maxOrb) {
+                data.aspects.push({
+                  body1: other.name, symbol1: other.symbol,
+                  body2: chironBody.name, symbol2: chironBody.symbol,
+                  aspectName: aname, aspectSymbol: asym,
+                  angle: Number(diff.toFixed(2)), orb: Number(orb.toFixed(2)), color
+                });
+              }
+            }
+          });
+        }
+      }
+
+      // 2. Garante Nodo Médio se não veio do backend em memória
+      if (!data.bodies.some((b) => b.id === 'mean_north_node')) {
+        const meanNodeLon = (j) => {
+          const T = (j - 2451545.0) / 36525.0;
+          const T2 = T * T, T3 = T2 * T, T4 = T3 * T;
+          return map360(125.0445479 - 1934.1362891 * T + 0.0020754 * T2 + T3 / 467441.0 - T4 / 60616000.0);
+        };
+        const mnn = meanNodeLon(jd);
+        let dLon = meanNodeLon(jd + dt) - meanNodeLon(jd - dt);
+        if (dLon > 180) dLon -= 360;
+        if (dLon < -180) dLon += 360;
+        const speed = dLon / (2 * dt);
+        const msn = map360(mnn + 180);
+
+        const meanNorth = makeBody('mean_north_node', 'Nodo Norte (Médio)', '☊', 'Ponto Lunar', mnn, 0, 0, '-', eps, speed);
+        const meanSouth = makeBody('mean_south_node', 'Nodo Sul (Médio)', '☋', 'Ponto Lunar', msn, 0, 0, '-', eps, speed);
+
+        const trueIdx = data.bodies.findIndex((b) => b.id === 'true_north_node');
+        if (trueIdx >= 0) {
+          data.bodies.splice(trueIdx, 0, meanNorth, meanSouth);
+        } else {
+          data.bodies.push(meanNorth, meanSouth);
+        }
+      }
+    }
+
+    async function calculate() {
+      const dtVal = document.getElementById('dtInput').value;
+      const lngVal = document.getElementById('lngInput').value || '-46.6333';
+      const iso = dtVal ? dtVal + 'Z' : new Date().toISOString();
+
+      const res = await fetch(`/api/calculate?iso=${encodeURIComponent(iso)}&lng=${encodeURIComponent(lngVal)}`);
+      const data = await res.json();
+      if (data.error) {
+        alert(data.error);
+        return;
+      }
+
+      ensureMeanNodesInData(data);
+
+      const nodeMode = document.getElementById('nodeModeSelect')?.value || 'mean';
+      const visibleBodies = data.bodies.filter((b) => {
+        if (nodeMode === 'mean' && (b.id === 'true_north_node' || b.id === 'true_south_node')) return false;
+        if (nodeMode === 'true' && (b.id === 'mean_north_node' || b.id === 'mean_south_node')) return false;
+        return true;
+      });
+
+      document.getElementById('mRustTime').textContent = `${data.computationTimeMicros} µs`;
+      document.getElementById('mJd').textContent = data.julianDay.toFixed(5);
+      document.getElementById('mObliq').textContent = `${data.astronomy.trueObliquity.toFixed(5)}°`;
+      document.getElementById('mNut').textContent = `${data.astronomy.nutationLongitudeArcsec.toFixed(2)}" / ${data.astronomy.nutationObliquityArcsec.toFixed(2)}"`;
+      document.getElementById('mLst').textContent = `${data.astronomy.localSiderealTimeHours.toFixed(4)} h`;
+      document.getElementById('isoLabel').textContent = `UTC: ${data.isoDate}`;
+
+      const tbody = document.getElementById('planetsBody');
+      tbody.innerHTML = visibleBodies.map((b) => `
+        <tr>
+          <td><span class="symbol-cell">${b.symbol}</span><strong>${b.name}</strong></td>
+          <td class="elem-${b.element}">${b.signSymbol} ${b.signName}</td>
+          <td class="mono"><strong>${b.formattedPosition}</strong></td>
+          <td class="mono">${b.longitude.toFixed(5)}°</td>
+          <td class="mono">${b.latitude.toFixed(5)}°</td>
+          <td class="mono">${b.rightAscension.toFixed(3)}h / ${b.declination.toFixed(3)}°</td>
+          <td class="mono">${b.distance > 0 ? b.distance.toFixed(5) + ' ' + b.distanceUnit : '—'}</td>
+          <td class="mono">${b.dailySpeed >= 0 ? '+' : ''}${b.dailySpeed.toFixed(4)}°</td>
+          <td>
+            ${b.isRetrograde
+              ? '<span class="badge-rx">Rx Retrógrado</span>'
+              : '<span class="badge-dir">Direto</span>'}
+          </td>
+        </tr>
+      `).join('');
+
+      document.getElementById('aspectCount').textContent = `${data.aspects.length} aspectos ativos`;
+      document.getElementById('aspectsContainer').innerHTML = data.aspects.map((a) => `
+        <div class="aspect-pill" style="border-left: 3px solid ${a.color}">
+          <span><strong>${a.symbol1} ${a.body1}</strong> <span style="color:${a.color}">${a.aspectSymbol} ${a.aspectName}</span> <strong>${a.symbol2} ${a.body2}</strong></span>
+          <span class="mono" style="color:var(--muted);font-size:0.75rem">orbe ${a.orb.toFixed(2)}°</span>
+        </div>
+      `).join('');
+
+      document.getElementById('mongoJson').textContent = JSON.stringify(data, null, 2);
+      drawZodiacWheel(data.bodies, data.aspects);
+    }
+
+    document.getElementById('btnCalc').addEventListener('click', calculate);
+    document.getElementById('nodeModeSelect').addEventListener('change', calculate);
+    document.getElementById('btnNow').addEventListener('click', () => {
+      setInputToNowUTC();
+      calculate();
+    });
+
+    setInputToNowUTC();
+    calculate();
+  </script>
+</body>
+</html>
