@@ -1,5 +1,6 @@
-# Ignora a pasta de arquivos legados/antigos e zips
-_legado_para_remover/
+# Ignora a pasta de arquivos legados/antigos e zips (mesmo se renomeada)
+_legado*/
+legado*/
 *.zip
 
 # Ignora artefatos de compilação do Rust e Node.js

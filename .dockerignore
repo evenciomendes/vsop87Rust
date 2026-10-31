@@ -1,0 +1,7 @@
+_legado*/
+legado*/
+*.zip
+.git/
+**/target/
+**/node_modules/
+
