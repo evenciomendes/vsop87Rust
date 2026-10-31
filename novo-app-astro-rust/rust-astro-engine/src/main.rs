@@ -17,31 +17,9 @@ fn to_json(jd: f64, lng_observer: f64) -> String {
         if i > 0 {
             bodies_json.push(',');
         }
+        let escaped_pos = b.formatted_position.replace('"', r#"\""#);
         bodies_json.push_str(&format!(
-            concat!(
-                "{{",
-                ""id":"{}",",
-                ""name":"{}",",
-                ""symbol":"{}",",
-                ""category":"{}",",
-                ""longitude":{:.6},",
-                ""latitude":{:.6},",
-                ""rightAscension":{:.6},",
-                ""declination":{:.6},",
-                ""distance":{:.6},",
-                ""distanceUnit":"{}",",
-                ""dailySpeed":{:.6},",
-                ""isRetrograde":{},",
-                ""signIndex":{},",
-                ""signName":"{}",",
-                ""signSymbol":"{}",",
-                ""element":"{}",",
-                ""degreeInSign":{},",
-                ""minutes":{},",
-                ""seconds":{:.2},",
-                ""formattedPosition":"{}"",
-                "}}"
-            ),
+            r#"{{"id":"{}","name":"{}","symbol":"{}","category":"{}","longitude":{:.6},"latitude":{:.6},"rightAscension":{:.6},"declination":{:.6},"distance":{:.6},"distanceUnit":"{}","dailySpeed":{:.6},"isRetrograde":{},"signIndex":{},"signName":"{}","signSymbol":"{}","element":"{}","degreeInSign":{},"minutes":{},"seconds":{:.2},"formattedPosition":"{}"}}"#,
             b.id,
             b.name,
             b.symbol,
@@ -61,7 +39,7 @@ fn to_json(jd: f64, lng_observer: f64) -> String {
             b.degree_in_sign,
             b.minutes,
             b.seconds,
-            b.formatted_position.replace('"', "\"")
+            escaped_pos
         ));
     }
     bodies_json.push(']');
@@ -91,10 +69,16 @@ fn to_json(jd: f64, lng_observer: f64) -> String {
                     }
                     first_asp = false;
                     aspects_json.push_str(&format!(
-                        "{{"body1":"{}","symbol1":"{}","body2":"{}","symbol2":"{}","aspectName":"{}","aspectSymbol":"{}","angle":{:.2},"orb":{:.2},"color":"{}"}}",
-                        bodies[i].name, bodies[i].symbol,
-                        bodies[j].name, bodies[j].symbol,
-                        aname, asym, diff, orb, color
+                        r#"{{"body1":"{}","symbol1":"{}","body2":"{}","symbol2":"{}","aspectName":"{}","aspectSymbol":"{}","angle":{:.2},"orb":{:.2},"color":"{}"}}"#,
+                        bodies[i].name,
+                        bodies[i].symbol,
+                        bodies[j].name,
+                        bodies[j].symbol,
+                        aname,
+                        asym,
+                        diff,
+                        orb,
+                        color
                     ));
                 }
             }
@@ -103,23 +87,7 @@ fn to_json(jd: f64, lng_observer: f64) -> String {
     aspects_json.push(']');
 
     format!(
-        concat!(
-            "{{",
-            ""engine":"rust-astro-engine v1.0 (VSOP87 + ELP2000 + Meeus)",",
-            ""julianDay":{:.6},",
-            ""unixMs":{:.0},",
-            ""computationTimeMicros":{},",
-            ""astronomy":{{",
-            ""trueObliquity":{:.6},",
-            ""meanObliquity":{:.6},",
-            ""nutationLongitudeArcsec":{:.4},",
-            ""nutationObliquityArcsec":{:.4},",
-            ""localSiderealTimeHours":{:.6}",
-            "}},",
-            ""bodies":{},",
-            ""aspects":{}",
-            "}}"
-        ),
+        r#"{{"engine":"rust-astro-engine v1.0 (VSOP87 + ELP2000 + Meeus)","julianDay":{:.6},"unixMs":{:.0},"computationTimeMicros":{},"astronomy":{{"trueObliquity":{:.6},"meanObliquity":{:.6},"nutationLongitudeArcsec":{:.4},"nutationObliquityArcsec":{:.4},"localSiderealTimeHours":{:.6}}},"bodies":{},"aspects":{}}}"#,
         jd,
         julianday::to_unix_ms(jd),
         elapsed_us,
@@ -135,10 +103,6 @@ fn to_json(jd: f64, lng_observer: f64) -> String {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    // Uso:
-    // rust-astro-engine --jd 2461344.208333 --lng -46.6333
-    // rust-astro-engine --unix-ms 1793390400000 --lng -46.6333
-    // rust-astro-engine --utc 2026 10 30 17 0 0
     let mut jd = julianday::from_utc(2026, 10, 30, 17, 0, 0.0);
     let mut lng = -46.6333; // São Paulo default
 

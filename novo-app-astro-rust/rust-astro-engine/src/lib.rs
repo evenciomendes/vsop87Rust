@@ -1052,7 +1052,7 @@ fn build_body_result(
     let is_retrograde = daily_speed < 0.0;
     let rx_tag = if is_retrograde { " Rx" } else { "" };
     let formatted_position = format!(
-        "{:02}° {} {:02}' {:04.1}"{}",
+        r#"{:02}° {} {:02}' {:04.1}"{}"#,
         dms.radix, sign_symbol, dms.minutes, dms.seconds, rx_tag
     );
 

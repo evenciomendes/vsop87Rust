@@ -1,19 +1,18 @@
 # =============================================================================
-# ESTÁGIO 1: Compila o Motor Astronômico em Rust para Linux (x86_64)
-# (Não precisa ter o Rust instalado na sua máquina Windows!)
+# ESTÁGIO 1: Compila o Motor Astronômico em Rust para Linux (Debian Bookworm)
 # =============================================================================
-FROM rust:1.82-slim AS rust-builder
+FROM rust:1-bookworm AS rust-builder
 
 WORKDIR /build/rust-astro-engine
 COPY rust-astro-engine/ ./
 
-# Compila o binário nativo com otimização máxima (LTO + opt-level 3)
+# Compila o binário nativo com otimização máxima
 RUN cargo build --release
 
 # =============================================================================
 # ESTÁGIO 2: Imagem Final Leve (Node.js + Binário Rust compilado) para Cloud Run
 # =============================================================================
-FROM node:20-slim
+FROM node:20-bookworm-slim
 
 WORKDIR /app
 
@@ -31,4 +30,3 @@ ENV RUST_ASTRO_BIN=/usr/local/bin/rust-astro-engine
 EXPOSE 8080
 
 CMD ["node", "server.js"]
-
